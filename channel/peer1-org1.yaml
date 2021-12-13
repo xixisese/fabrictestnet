@@ -1,0 +1,68 @@
+version: "3"
+
+networks:
+  mhnet:
+    external: true
+
+      
+services:
+  peer1-org1:
+    container_name: peer1-org1
+    image: hyperledger/fabric-peer:2.2.4
+    environment:
+        # MSPID, 本组织的OrgID，等同于configtx.yaml中配置的Organization的ID
+        - CORE_PEER_LOCALMSPID=Org1
+        # 本peer的msp路径 
+        # - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/fabric/mymsp
+
+
+        # Docker虚拟机的地址，在peer创建chaincode虚拟机时使用，在mac/windows上配置如下 
+        - CORE_VM_ENDPOINT=unix:///var/run/docker.sock
+        # 设置chaincode的网络,一般设置和本peer网络一样  
+        - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=mhnet
+        # 日志等级
+        - FABRIC_LOGGING_SPEC=INFO
+         
+        # TLS通讯证书配置
+        - CORE_PEER_TLS_ENABLED=true
+        - CORE_PEER_PROFILE_ENABLED=false
+        - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/fabric/cert/peer1-org1.crt
+        - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/fabric/cert/peer1-org1.key
+        - CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/fabric/cert/root-org1.crt
+
+        # Peer 端口配置
+        - CORE_PEER_ID=peer1-org1
+        - CORE_PEER_ADDRESS=peer1.org1.com:8050
+        - CORE_PEER_LISTENADDRESS=peer1.org1.com:8050
+        - CORE_PEER_CHAINCODEADDRESS=peer1.org1.com:8150
+        - CORE_PEER_CHAINCODELISTENADDRESS=peer1.org1.com:8150
+        - CORE_PEER_GOSSIP_BOOTSTRAP=peer1.org1.com:8050
+        - CORE_PEER_GOSSIP_ENDPOINT=peer1.org1.com:8050
+        - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer1.org1.com:8050
+
+        # 监控配置          
+        # 打开Prometheus服务
+        - CORE_METRICS_PROVIDER=prometheus
+        # 监控地址和端口 
+        - CORE_OPERATIONS_LISTENADDRESS=peer1.org1.com:18050   
+          
+    command: peer node start
+    working_dir: /var/hyperledger
+    
+    hostname: peer1.org1.com
+    #extra_hosts:
+    #    - "orderer1.org1.com:8.142.25.116"
+    #    - "peer1.org1.com:8.142.25.116"
+    
+    ports:
+        - 8050:8050
+        - 18050:18050
+
+    volumes:
+        # /var/run/docker.sock这个配置很关键，用于和上面的CORE_VM_ENDPOINT配合，指明docker程序的endpoint
+        - /var/run/docker.sock:/var/run/docker.sock
+        - ./data/etc:/etc/hyperledger/fabric
+        - ./data/var:/var/hyperledger 
+
+    networks:
+        mhnet:
